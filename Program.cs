@@ -18,6 +18,15 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+public class RouteConfig
+{
+    public static void RegisterRoutes(RouteCollection routes)
+    {
+        routes.IgnoreRoute("download/{*pathInfo}");
+        routes.IgnoreRoute("search/{*pathInfo}");
+    }
+}
+
 app.UseAuthorization();
 
 app.MapRazorPages();
