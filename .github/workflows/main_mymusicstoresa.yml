@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - Mymusicstoresa
+name: Build and deploy PHP app to Azure Web App - Mymusicstoresa
 
 on:
   push:
@@ -16,22 +16,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          dotnet-version: '9.x'
+          php-version: '8.3'
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Check if composer.json exists
+        id: check_files
+        uses: andstor/file-existence-action@v1
+        with:
+          files: 'composer.json'
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+      - name: Run composer install if composer.json exists
+        if: steps.check_files.outputs.files_exists == 'true'
+        run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
+
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          name: php-app
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,18 +53,21 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: .net-app
+          name: php-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8B9003DFC2894B6ABD479CE1B2844959 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A7C3D7EA1227450983819939DAF19659 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CA19F5F67C81428D80F13F363BE57DCE }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_51BA9ED0D5854E6C95A02C3F99466648 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_00D160FBCB264431BE37AA11EBED2AB0 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_461FE9D1D5D04A209D1E69619AA9E9CB }}
 
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
           app-name: 'Mymusicstoresa'
           slot-name: 'Production'
